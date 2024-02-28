@@ -1,66 +1,150 @@
-#include <windows.h>
+#if defined(UNICODE) && !defined(_UNICODE)
+    #define _UNICODE
+#elif defined(_UNICODE) && !defined(UNICODE)
+    #define UNICODE
+#endif
 
-/* This is where all the input to the window goes to */
-LRESULT CALLBACK WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam) {
-	switch(Message) {
-		
-		/* Upon destruction, tell the main thread to stop */
-		case WM_DESTROY: {
-			PostQuitMessage(0);
-			break;
-		}
-		
-		/* All other messages (a lot of them) are processed using default procedures */
-		default:
-			return DefWindowProc(hwnd, Message, wParam, lParam);
-	}
-	return 0;
+#include<iostream>
+#include <windows.h>
+#include <tchar.h>
+#include <string>
+
+LRESULT CALLBACK WindowProcedure(HWND, UINT, WPARAM, LPARAM);
+
+HWND textfield, button1, button2, button3, button4, textbox1, textbox2;
+double textsaved;
+
+TCHAR szClassName[] = _T("CodeBlocksWindowsApp");
+
+int WINAPI WinMain(HINSTANCE hThisInstance,
+                     HINSTANCE hPrevInstance,
+                     LPSTR lpszArgument,
+                     int nCmdShow)
+{
+    HWND hwnd;
+    MSG messages;
+    WNDCLASSEX wincl;
+
+    wincl.hInstance = hThisInstance;
+    wincl.lpszClassName = szClassName;
+    wincl.lpfnWndProc = WindowProcedure;
+    wincl.style = CS_DBLCLKS;
+    wincl.cbSize = sizeof (WNDCLASSEX);
+
+    wincl.hIcon = LoadIcon(NULL, IDI_APPLICATION);
+    wincl.hIconSm = LoadIcon(NULL, IDI_APPLICATION);
+    wincl.hCursor = LoadCursor(NULL, IDC_ARROW);
+    wincl.lpszMenuName = NULL;
+    wincl.cbClsExtra = 0;
+    wincl.cbWndExtra = 0;
+    wincl.hbrBackground = CreateSolidBrush(RGB(202, 108, 255));
+
+    if (!RegisterClassEx(&wincl))
+        return 0;
+
+    hwnd = CreateWindowEx(
+           0,
+           szClassName,
+           _T("My Calculator"),
+           WS_MAXIMIZEBOX | WS_SYSMENU,
+           CW_USEDEFAULT, CW_USEDEFAULT,
+           250, 200,
+           HWND_DESKTOP,
+           NULL,
+           hThisInstance,
+           NULL);
+
+    ShowWindow(hwnd, nCmdShow);
+
+    while (GetMessage(&messages, NULL, 0, 0))
+    {
+        TranslateMessage(&messages);
+        DispatchMessage(&messages);
+    }
+
+    return messages.wParam;
 }
 
-/* The 'main' function of Win32 GUI programs: this is where execution starts */
-int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
-	WNDCLASSEX wc; /* A properties struct of our window */
-	HWND hwnd; /* A 'HANDLE', hence the H, or a pointer to our window */
-	MSG msg; /* A temporary location for all messages */
 
-	/* zero out the struct and set the stuff we want to modify */
-	memset(&wc,0,sizeof(wc));
-	wc.cbSize	 = sizeof(WNDCLASSEX);
-	wc.lpfnWndProc	 = WndProc; /* This is where we will send messages to */
-	wc.hInstance	 = hInstance;
-	wc.hCursor	 = LoadCursor(NULL, IDC_ARROW);
-	
-	/* White, COLOR_WINDOW is just a #define for a system color, try Ctrl+Clicking it */
-	wc.hbrBackground = (HBRUSH)(COLOR_WINDOW+1);
-	wc.lpszClassName = "WindowClass";
-	wc.hIcon	 = LoadIcon(NULL, IDI_APPLICATION); /* Load a standard icon */
-	wc.hIconSm	 = LoadIcon(NULL, IDI_APPLICATION); /* use the name "A" to use the project icon */
+LRESULT CALLBACK WindowProcedure(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
+    switch (message)
+    {
+        case WM_CREATE:
+            textfield = CreateWindow(_T("STATIC"), _T("  Please input two numbers"),
+                                    WS_VISIBLE | WS_CHILD | WS_BORDER,
+                                    35, 20, 180, 20, hwnd, NULL, NULL, NULL);
+            textbox1 = CreateWindow(_T("EDIT"), _T(""), WS_VISIBLE | WS_CHILD | WS_BORDER,
+                                    35, 50, 180, 20, hwnd, NULL, NULL, NULL);
+            textbox2 = CreateWindow(_T("EDIT"), _T(""), WS_VISIBLE | WS_CHILD | WS_BORDER,
+                                    35, 80, 180, 20, hwnd, NULL, NULL, NULL);
+            button1 = CreateWindow(_T("BUTTON"), _T("+"), WS_VISIBLE | WS_CHILD | WS_BORDER,
+                                    65, 110, 20, 20, hwnd, (HMENU) 1, NULL, NULL);
+            button2 = CreateWindow(_T("BUTTON"), _T("-"), WS_VISIBLE | WS_CHILD | WS_BORDER,
+                                    95, 110, 20, 20, hwnd, (HMENU) 2, NULL, NULL);
+            button3 = CreateWindow(_T("BUTTON"), _T("*"), WS_VISIBLE | WS_CHILD | WS_BORDER,
+                                    125, 110, 20, 20, hwnd, (HMENU) 3, NULL, NULL);
+            button4 = CreateWindow(_T("BUTTON"), _T("/"), WS_VISIBLE | WS_CHILD | WS_BORDER,
+                                    155, 110, 20, 20, hwnd, (HMENU) 4, NULL, NULL);
+            break;
 
-	if(!RegisterClassEx(&wc)) {
-		MessageBox(NULL, "Window Registration Failed!","Error!",MB_ICONEXCLAMATION|MB_OK);
-		return 0;
-	}
+        case WM_COMMAND:
+            switch (LOWORD(wParam))
+            {
+                case 1:
+                {
+                    char buffer1[256], buffer2[256];
+                    GetWindowText(textbox1, buffer1, 256);
+                    GetWindowText(textbox2, buffer2, 256);
+                    double num1 = atof(buffer1);
+                    double num2 = atof(buffer2);
+                    textsaved = num1 + num2;
+                    MessageBox(hwnd, std::to_string(textsaved).c_str(), _T("Result"), MB_OK);
+                    break;
+                }
+                case 2:
+                {
+                    char buffer1[256], buffer2[256];
+                    GetWindowText(textbox1, buffer1, 256);
+                    GetWindowText(textbox2, buffer2, 256);
+                    double num1 = atof(buffer1);
+                    double num2 = atof(buffer2);
+                    textsaved = num1 - num2;
+                    MessageBox(hwnd, std::to_string(textsaved).c_str(), _T("Result"), MB_OK);
+                    break;
+                }
+                case 3:
+                {
+                    char buffer1[256], buffer2[256];
+                    GetWindowText(textbox1, buffer1, 256);
+                    GetWindowText(textbox2, buffer2, 256);
+                    double num1 = atof(buffer1);
+                    double num2 = atof(buffer2);
+                    textsaved = num1 * num2;
+                    MessageBox(hwnd, std::to_string(textsaved).c_str(), _T("Result"), MB_OK);
+                    break;
+                }
+                case 4:
+                {
+                    char buffer1[256], buffer2[256];
+                    GetWindowText(textbox1, buffer1, 256);
+                    GetWindowText(textbox2, buffer2, 256);
+                    double num1 = atof(buffer1);
+                    double num2 = atof(buffer2);
+                    textsaved = num1 / num2;
+                    MessageBox(hwnd, std::to_string(textsaved).c_str(), _T("Result"), MB_OK);
+                    break;
+                }
+            }
+            break;
 
-	hwnd = CreateWindowEx(WS_EX_CLIENTEDGE,"WindowClass","Caption",WS_VISIBLE|WS_OVERLAPPEDWINDOW,
-		CW_USEDEFAULT, /* x */
-		CW_USEDEFAULT, /* y */
-		640, /* width */
-		480, /* height */
-		NULL,NULL,hInstance,NULL);
+        case WM_DESTROY:
+            PostQuitMessage(0);
+            break;
 
-	if(hwnd == NULL) {
-		MessageBox(NULL, "Window Creation Failed!","Error!",MB_ICONEXCLAMATION|MB_OK);
-		return 0;
-	}
+        default:
+            return DefWindowProc(hwnd, message, wParam, lParam);
+    }
 
-	/*
-		This is the heart of our program where all input is processed and 
-		sent to WndProc. Note that GetMessage blocks code flow until it receives something, so
-		this loop will not produce unreasonably high CPU usage
-	*/
-	while(GetMessage(&msg, NULL, 0, 0) > 0) { /* If no error is received... */
-		TranslateMessage(&msg); /* Translate key codes to chars if present */
-		DispatchMessage(&msg); /* Send it to WndProc */
-	}
-	return msg.wParam;
+    return 0;
 }
